@@ -1,0 +1,13 @@
+# 내려받은 개발 도구 (Node.js 등) — 용량이 커서 git에 넣지 않음
+.tools/
+
+# 설치된 라이브러리와 빌드 결과물
+node_modules/
+dist/
+dev-dist/
+coverage/
+
+# 기타
+.DS_Store
+*.log
+*.local

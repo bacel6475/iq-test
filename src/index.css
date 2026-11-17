@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+
+/* 다크 모드는 기기 설정을 따르되, 나중에 설정 화면에서 html에 .dark / .light 를 붙여 강제할 수 있게 한다. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    'Apple SD Gothic Neo',
+    'Noto Sans KR',
+    'Malgun Gothic',
+    sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
