@@ -1,6 +1,23 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { getActiveSession, listSessions, type TestSession } from '../db/repo';
+import { getPreset } from '../presets';
+import { formatClock } from '../scoring';
+
+function formatDate(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 export default function Home() {
+  const [active, setActive] = useState<TestSession | undefined>();
+  const [recent, setRecent] = useState<TestSession[]>([]);
+
+  useEffect(() => {
+    void getActiveSession().then(setActive);
+    void listSessions().then((all) => setRecent(all.filter((s) => s.status !== 'active').slice(0, 3)));
+  }, []);
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-16 pb-8">
       <header>
@@ -10,24 +27,60 @@ export default function Home() {
         </p>
       </header>
 
-      <section className="mt-10">
-        <button
-          type="button"
-          disabled
-          className="h-14 w-full rounded-xl bg-neutral-900 text-lg font-semibold text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
+      {active && (
+        <section className="mt-8 rounded-2xl border border-amber-400 bg-amber-50 p-5 dark:border-amber-600 dark:bg-amber-950/40">
+          <p className="font-semibold">진행 중인 시험이 있습니다</p>
+          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+            {getPreset(active.presetId).name} ·{' '}
+            {active.endAt !== null ? `남은 시간 약 ${formatClock(active.endAt - Date.now())}` : '연습'}
+          </p>
+          <Link
+            to={`/test/${active.id}`}
+            className="mt-4 flex h-12 items-center justify-center rounded-xl bg-amber-500 font-semibold text-white"
+          >
+            이어서 풀기
+          </Link>
+        </section>
+      )}
+
+      <section className="mt-8">
+        <Link
+          to="/setup"
+          className="flex h-14 w-full items-center justify-center rounded-xl bg-neutral-900 text-lg font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900"
         >
           시험 시작
-        </button>
-        <p className="mt-3 text-center text-sm text-neutral-500">
-          아직 준비 중입니다. 문제 생성기를 만든 뒤 열립니다.
-        </p>
+        </Link>
       </section>
 
       <section className="mt-10">
         <h2 className="text-sm font-semibold text-neutral-500">최근 기록</h2>
-        <p className="mt-3 rounded-xl border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-500 dark:border-neutral-700">
-          아직 본 시험이 없습니다.
-        </p>
+        {recent.length === 0 ? (
+          <p className="mt-3 rounded-xl border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-500 dark:border-neutral-700">
+            아직 본 시험이 없습니다.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {recent.map((s) => (
+              <li key={s.id}>
+                <Link
+                  to={`/result/${s.id}`}
+                  className="flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm dark:bg-neutral-900"
+                >
+                  <span>
+                    <span className="block font-semibold">
+                      {getPreset(s.presetId).name}
+                      {s.mode === 'practice' && <span className="ml-1 text-sm font-normal text-neutral-500">(연습)</span>}
+                    </span>
+                    <span className="block text-sm text-neutral-500">{formatDate(s.startedAt)}</span>
+                  </span>
+                  <span className="text-lg font-semibold tabular-nums">
+                    {s.rawScore} / {s.items.length}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <footer className="mt-auto pt-10 text-center text-xs leading-relaxed text-neutral-400 dark:text-neutral-600">

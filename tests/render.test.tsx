@@ -1,9 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
-import App from '../src/App';
 import { generateItem } from '../src/generator';
+import { renderApp } from './helpers';
 import { Matrix } from '../src/render/Matrix';
 
 describe('행렬 렌더러', () => {
@@ -27,12 +26,8 @@ describe('행렬 렌더러', () => {
 
 describe('개발용 갤러리', () => {
   it('문항 50개를 정답 표시와 함께 보여 주고 레벨을 바꿀 수 있다', async () => {
-    render(
-      <MemoryRouter initialEntries={['/dev/gallery']}>
-        <App />
-      </MemoryRouter>,
-    );
-    expect(screen.getAllByTestId('gallery-item')).toHaveLength(50);
+    renderApp('/dev/gallery');
+    expect(await screen.findAllByTestId('gallery-item')).toHaveLength(50);
     expect(document.querySelectorAll('[data-answer]')).toHaveLength(50);
     expect(screen.queryByText('검증 실패')).not.toBeInTheDocument();
 

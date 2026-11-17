@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { HashRouter } from 'react-router';
-import App from './App';
+import { createHashRouter, RouterProvider } from 'react-router';
+import { routes } from './App';
 import './index.css';
 
 const root = document.getElementById('root');
@@ -13,10 +13,11 @@ const applyTheme = () => document.documentElement.classList.toggle('dark', media
 applyTheme();
 media.addEventListener('change', applyTheme);
 
+// 해시 라우터: 주소가 /#/setup 처럼 되어 GitHub Pages 같은 정적 호스팅에서도 새로고침이 된다.
+const router = createHashRouter(routes);
+
 createRoot(root).render(
   <StrictMode>
-    <HashRouter>
-      <App />
-    </HashRouter>
+    <RouterProvider router={router} />
   </StrictMode>,
 );

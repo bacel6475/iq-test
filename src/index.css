@@ -9,6 +9,39 @@ body,
   height: 100%;
 }
 
+/*
+ * 시험 화면 배치. --s는 행렬 한 변의 길이.
+ * 세로(폰): 행렬 아래에 보기 4열×2행 → 전체 높이 ≈ 1.5 × --s
+ * 가로(PC): 행렬 오른쪽에 보기 2열×4행 → 전체 너비 ≈ 1.5 × --s
+ * 위·아래 바(각 64px)와 여백을 뺀 공간에 스크롤 없이 들어가도록 계산한다.
+ */
+.test-stage {
+  --gap: 12px;
+  --s: min(100vw - 24px, (100dvh - 128px - 24px - var(--gap)) / 1.5, 600px);
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: var(--s);
+}
+.test-stage > .test-matrix {
+  width: var(--s);
+}
+.test-options {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (orientation: landscape) {
+  .test-stage {
+    --gap: 24px;
+    --s: min((100vw - 48px - var(--gap)) / 1.5, 100dvh - 128px - 32px, 760px);
+    grid-template-columns: var(--s) calc(var(--s) / 2 - 4px);
+    align-items: center;
+  }
+  .test-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 body {
   font-family:
     system-ui,
