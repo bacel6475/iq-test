@@ -1,3 +1,5 @@
+import { Link } from 'react-router';
+
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pt-16 pb-8">
@@ -29,7 +31,10 @@ export default function Home() {
       </section>
 
       <footer className="mt-auto pt-10 text-center text-xs leading-relaxed text-neutral-400 dark:text-neutral-600">
-        이 앱의 점수는 공인 IQ가 아니며 본인 기록 간 비교용입니다.
+        <p>이 앱의 점수는 공인 IQ가 아니며 본인 기록 간 비교용입니다.</p>
+        <Link to="/dev/gallery" className="mt-3 inline-block px-3 py-3 underline underline-offset-4">
+          개발용 문항 갤러리
+        </Link>
       </footer>
     </main>
   );
