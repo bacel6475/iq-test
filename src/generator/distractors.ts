@@ -1,8 +1,13 @@
+import { applyOp } from './logicOps';
 import { pick, randInt, sample, shuffle, type Rng } from './rng';
 import { cellKey } from './signature';
 import {
   ASYMMETRIC_SHAPES,
   ATTR_RANGE,
+  LOGIC_OPS,
+  SEGMENT_COUNT,
+  type LogicCell,
+  type LogicOp,
   MODE_ATTRS,
   ROTATION_STEPS,
   shapeDomain,
@@ -145,4 +150,56 @@ export function makeAttributeDistractors(
   for (let i = 0; i < 80 && chosen.length < 7; i++) add(randomDouble());
 
   return chosen.length === 7 ? chosen : null;
+}
+
+/**
+ * 논리 계열 오답 7개. 정답(마스크)에서 출발해
+ *  - 행렬에 이미 나온 칸 복사 (1~2개)
+ *  - 다른 연산을 적용한 결과 (2개, "2열에서 1열을 뺀 것" 포함)
+ *  - 선분 1개를 켜거나 끈 것 (2개), 2개를 켜거나 끈 것 (1개)
+ * 를 섞고, 모자라면 남은 후보로 채운다. 빈 그림과 서로 같은 그림은 만들지 않는다.
+ */
+export function makeLogicDistractors(rng: Rng, cells: readonly LogicCell[], op: LogicOp): LogicCell[] | null {
+  const answer = cells[8].mask;
+  const a = cells[6].mask;
+  const b = cells[7].mask;
+
+  const chosen: number[] = [];
+  const seen = new Set<number>([answer, 0]);
+  const add = (mask: number): boolean => {
+    if (chosen.length >= 7 || seen.has(mask)) return false;
+    seen.add(mask);
+    chosen.push(mask);
+    return true;
+  };
+  const addUpTo = (pool: number[], limit: number) => {
+    let added = 0;
+    for (const mask of pool) {
+      if (added >= limit) break;
+      if (add(mask)) added++;
+    }
+  };
+
+  const copies = shuffle(
+    rng,
+    cells.slice(0, 8).map((c) => c.mask),
+  );
+  const otherOps = shuffle(rng, [
+    ...LOGIC_OPS.filter((o) => o !== op).map((o) => applyOp(o, a, b)),
+    applyOp('diff', b, a),
+  ]);
+  const bits = Array.from({ length: SEGMENT_COUNT }, (_, i) => 1 << i);
+  const toggle1 = shuffle(rng, bits).map((bit) => answer ^ bit);
+  const toggle2 = Array.from({ length: 30 }, () => {
+    const [x, y] = sample(rng, bits, 2);
+    return answer ^ x ^ y;
+  });
+
+  addUpTo(copies, 1 + randInt(rng, 2));
+  addUpTo(otherOps, 2);
+  addUpTo(toggle1, 2);
+  addUpTo(toggle2, 1);
+  addUpTo([...otherOps, ...toggle1, ...toggle2, ...copies], 7);
+
+  return chosen.length === 7 ? chosen.map((mask) => ({ kind: 'logic', mask })) : null;
 }

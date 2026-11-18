@@ -136,7 +136,7 @@ function Review({ session, index, setIndex }: { session: TestSession; index: num
                 {describeRules(item).map((rule) => (
                   <li key={rule}>· {rule}</li>
                 ))}
-                <li className="text-neutral-500">· 나머지 속성은 모든 칸에서 같음</li>
+                {item.family === 'attribute' && <li className="text-neutral-500">· 나머지 속성은 모든 칸에서 같음</li>}
               </ul>
             </div>
           </div>

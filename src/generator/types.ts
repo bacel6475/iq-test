@@ -90,7 +90,21 @@ export interface AttributeCell {
   layers: Layer[];
 }
 
-export type CellSpec = AttributeCell;
+/**
+ * 논리 계열 칸: 3×3 점 격자 위의 선분 12개 중 켜진 것을 12비트로 나타낸다.
+ * 비트 0~5: 가로 선분 (점 행 r, 칸 c → r*2+c), 비트 6~11: 세로 선분 (칸 행 r, 점 열 c → 6+r*3+c)
+ */
+export interface LogicCell {
+  kind: 'logic';
+  mask: number;
+}
+
+export type CellSpec = AttributeCell | LogicCell;
+
+export const LOGIC_OPS = ['or', 'and', 'xor', 'diff'] as const;
+export type LogicOp = (typeof LOGIC_OPS)[number];
+export const SEGMENT_COUNT = 12;
+export const FULL_MASK = (1 << SEGMENT_COUNT) - 1;
 
 export type RuleKind = 'constant' | 'progression' | 'distribute3';
 
@@ -121,7 +135,20 @@ export interface AttributeItemSpec {
   answerIndex: number;
 }
 
-export type ItemSpec = AttributeItemSpec;
+export interface LogicItemSpec {
+  generatorVersion: number;
+  family: 'logic';
+  seed: number;
+  level: Level;
+  score: number;
+  /** 각 행에서 3열 = operation(1열, 2열) */
+  operation: LogicOp;
+  cells: LogicCell[];
+  options: LogicCell[];
+  answerIndex: number;
+}
+
+export type ItemSpec = AttributeItemSpec | LogicItemSpec;
 
 /** 레이어의 도형 후보. rotation이 쓰이는 레이어는 비대칭 도형만 쓴다. */
 export function shapeDomain(mode: LayerMode, rotationActive: boolean): readonly Shape[] {

@@ -1,6 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { describeRules, generateItem, itemSignature, solveAttribute, type ItemSpec, type Level } from '../generator';
+import {
+  describeRules,
+  generateItem,
+  itemSignature,
+  LOGIC_LEVELS,
+  solveItem,
+  type Family,
+  type ItemSpec,
+  type Level,
+} from '../generator';
 import { mixSeed } from '../generator/rng';
 import { CellView } from '../render/Cell';
 import { Matrix } from '../render/Matrix';
@@ -18,14 +27,14 @@ interface GalleryItem {
   signature: string;
 }
 
-function buildItems(level: Level, baseSeed: number): GalleryItem[] {
+function buildItems(level: Level, family: Family, baseSeed: number): GalleryItem[] {
   return Array.from({ length: ITEM_COUNT }, (_, i) => {
     const seed = mixSeed(baseSeed, i);
-    const spec = generateItem(seed, level);
+    const spec = generateItem(seed, level, family);
     return {
       seed,
       spec,
-      solverOk: solveAttribute(spec).ok,
+      solverOk: solveItem(spec).ok,
       rules: describeRules(spec),
       signature: itemSignature(spec),
     };
@@ -34,8 +43,10 @@ function buildItems(level: Level, baseSeed: number): GalleryItem[] {
 
 export default function DevGallery() {
   const [level, setLevel] = useState<Level>(1);
+  const [family, setFamily] = useState<Family>('attribute');
   const [baseSeed, setBaseSeed] = useState(1);
-  const items = useMemo(() => buildItems(level, baseSeed), [level, baseSeed]);
+  const items = useMemo(() => buildItems(level, family, baseSeed), [level, family, baseSeed]);
+  const levelAvailable = (lv: Level) => family === 'attribute' || LOGIC_LEVELS.includes(lv);
 
   return (
     <main className="mx-auto max-w-7xl px-4 pt-6 pb-16">
@@ -55,8 +66,9 @@ export default function DevGallery() {
               key={lv}
               type="button"
               aria-pressed={lv === level}
+              disabled={!levelAvailable(lv)}
               onClick={() => setLevel(lv)}
-              className={`h-12 w-12 rounded-lg border text-base font-semibold ${
+              className={`h-12 w-12 rounded-lg border text-base font-semibold disabled:opacity-25 ${
                 lv === level
                   ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
                   : 'border-neutral-300 dark:border-neutral-700'
@@ -67,12 +79,33 @@ export default function DevGallery() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" role="group" aria-label="계열 선택">
           <span className="text-sm text-neutral-500">계열</span>
-          <span className="rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700">
-            속성 규칙
-          </span>
-          <span className="text-xs text-neutral-400">(논리 연산은 M4에서 추가)</span>
+          {(
+            [
+              ['attribute', '속성 규칙'],
+              ['logic', '논리 연산'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={family === value}
+              onClick={() => {
+                setFamily(value);
+                // 논리 계열은 레벨 2·3만 있다.
+                if (value === 'logic' && !LOGIC_LEVELS.includes(level)) setLevel(2);
+              }}
+              className={`h-12 rounded-lg border px-4 text-sm font-semibold ${
+                family === value
+                  ? 'border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900'
+                  : 'border-neutral-300 dark:border-neutral-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          {family === 'logic' && <span className="text-xs text-neutral-400">레벨 2·3만 있음</span>}
         </div>
 
         <div className="flex items-center gap-2">

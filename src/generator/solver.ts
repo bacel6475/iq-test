@@ -1,5 +1,9 @@
+import { applyOp, consistentOps } from './logicOps';
 import { cellKey } from './signature';
 import {
+  type ItemSpec,
+  type LogicItemSpec,
+  type LogicOp,
   ATTRS,
   ATTR_RANGE,
   ROTATION_STEPS,
@@ -150,4 +154,67 @@ export function solveAttribute(
     predicted,
     reason: ok ? undefined : `규칙을 만족하는 보기가 ${validOptions.length}개`,
   };
+}
+
+export interface LogicSolveResult extends SolveResult {
+  /** 가로 1·2행을 모두 만족하는 연산들 (정확히 1개여야 함) */
+  rowOps: LogicOp[];
+  /** 세로 1·2열을 모두 만족하는 연산들 (다른 답을 가리키면 모호한 문항) */
+  colOps: LogicOp[];
+}
+
+/**
+ * 논리 계열 검증. 보이는 8칸만으로
+ *  - 가로 방향: 1·2행을 모두 만족하는 연산이 정확히 하나인지
+ *  - 세로 방향으로 읽어도 다른 답이 나오지 않는지
+ *  - 그 답과 같은 보기가 정확히 하나인지
+ * 를 확인한다.
+ */
+export function solveLogic(
+  spec: Pick<LogicItemSpec, 'cells' | 'options' | 'answerIndex'>,
+): LogicSolveResult {
+  const m = spec.cells.map((c) => c.mask);
+  const at = (r: number, c: number) => m[r * 3 + c];
+
+  const rowOps = consistentOps([
+    [at(0, 0), at(0, 1), at(0, 2)],
+    [at(1, 0), at(1, 1), at(1, 2)],
+  ]);
+  const colOps = consistentOps([
+    [at(0, 0), at(1, 0), at(2, 0)],
+    [at(0, 1), at(1, 1), at(2, 1)],
+  ]);
+  const fail = (reason: string): LogicSolveResult => ({
+    ok: false,
+    validOptions: [],
+    predicted: null,
+    rowOps,
+    colOps,
+    reason,
+  });
+
+  if (rowOps.length !== 1) return fail(`가로 규칙 후보가 ${rowOps.length}개`);
+  const predictedMask = applyOp(rowOps[0], at(2, 0), at(2, 1));
+  if (predictedMask === 0) return fail('빈칸의 답이 빈 그림');
+  if (colOps.some((op) => applyOp(op, at(0, 2), at(1, 2)) !== predictedMask)) {
+    return fail('세로로 읽으면 다른 답이 나옴');
+  }
+
+  const validOptions = spec.options
+    .map((option, index) => (option.mask === predictedMask ? index : -1))
+    .filter((index) => index >= 0);
+  const ok = validOptions.length === 1 && validOptions[0] === spec.answerIndex;
+  return {
+    ok,
+    validOptions,
+    predicted: null,
+    rowOps,
+    colOps,
+    reason: ok ? undefined : `규칙을 만족하는 보기가 ${validOptions.length}개`,
+  };
+}
+
+/** 계열에 맞는 검증기로 확인한다. */
+export function solveItem(spec: ItemSpec): { ok: boolean; validOptions: number[]; reason?: string } {
+  return spec.family === 'logic' ? solveLogic(spec) : solveAttribute(spec);
 }

@@ -1,4 +1,4 @@
-import { ROTATION_PERIOD, type AttributeCell, type ItemSpec, type Layer } from './types';
+import { ROTATION_PERIOD, type CellSpec, type ItemSpec, type Layer } from './types';
 
 /**
  * 눈으로 봤을 때 같은 그림이면 같은 문자열이 되도록 정규화한다.
@@ -9,7 +9,8 @@ export function layerKey(layer: Layer): string {
   return [layer.mode, layer.shape, layer.size, layer.fill, rotation, layer.count].join(',');
 }
 
-export function cellKey(cell: AttributeCell): string {
+export function cellKey(cell: CellSpec): string {
+  if (cell.kind === 'logic') return `L${cell.mask}`;
   return cell.layers.map(layerKey).join('|');
 }
 
@@ -33,6 +34,9 @@ export function hashString(str: string): string {
  * 보기 순서나 시드가 달라도 같은 행렬이면 같은 서명이 된다.
  */
 export function itemSignature(spec: ItemSpec): string {
+  if (spec.family === 'logic') {
+    return hashString(JSON.stringify({ family: 'logic', rules: [spec.operation], cells: spec.cells.map(cellKey) }));
+  }
   const rules = spec.rules
     .map((r) => [r.layer, r.attr, r.kind, r.step ?? 0, r.perRow ? 1 : 0].join(':'))
     .sort();
@@ -48,6 +52,8 @@ export function itemSignature(spec: ItemSpec): string {
  * 한 시험지 안에서 비슷한 문항이 반복되지 않게 하는 데 쓰는 "규칙 조합 + 도형 조합" 키.
  */
 export function comboKey(spec: ItemSpec): string {
+  // 논리 계열은 "연산 + 첫 칸 그림"으로 본다.
+  if (spec.family === 'logic') return `logic:${spec.operation}#${spec.cells[0].mask}`;
   const rules = spec.rules.map((r) => [r.layer, r.attr, r.kind].join(':')).sort();
   const shapes = [...new Set(spec.cells.flatMap((c) => c.layers.map((l) => `${l.mode}:${l.shape}`)))].sort();
   return `${rules.join(',')}#${shapes.join(',')}`;

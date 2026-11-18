@@ -57,13 +57,47 @@ interface CellViewProps {
   className?: string;
 }
 
+/** 논리 계열: 3×3 점 격자(옅은 회색 점) 위에 켜진 선분을 굵은 검정 선으로 그린다. */
+const DOTS = [22, 50, 78];
+
+function segmentEnds(bit: number): [number, number, number, number] {
+  if (bit < 6) {
+    // 가로 선분: 점 행 r, 칸 c
+    const r = Math.floor(bit / 2);
+    const c = bit % 2;
+    return [DOTS[c], DOTS[r], DOTS[c + 1], DOTS[r]];
+  }
+  // 세로 선분: 칸 행 r, 점 열 c
+  const i = bit - 6;
+  const r = Math.floor(i / 3);
+  const c = i % 3;
+  return [DOTS[c], DOTS[r], DOTS[c], DOTS[r + 1]];
+}
+
+function LogicView({ mask }: { mask: number }): ReactElement {
+  const bits = Array.from({ length: 12 }, (_, i) => i).filter((i) => mask & (1 << i));
+  return (
+    <>
+      {DOTS.flatMap((y) => DOTS.map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r={2.6} fill="#c4c4c4" />))}
+      {bits.map((bit) => {
+        const [x1, y1, x2, y2] = segmentEnds(bit);
+        return (
+          <line key={bit} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#111111" strokeWidth={6.5} strokeLinecap="round" />
+        );
+      })}
+    </>
+  );
+}
+
 export function CellView({ cell, className }: CellViewProps): ReactElement {
   return (
     <svg viewBox="0 0 100 100" className={className} role="img" aria-hidden="true" style={{ display: 'block' }}>
       <rect x="0" y="0" width="100" height="100" fill="#ffffff" />
-      {cell.layers.map((layer, i) => (
-        <LayerView key={i} layer={layer} />
-      ))}
+      {cell.kind === 'logic' ? (
+        <LogicView mask={cell.mask} />
+      ) : (
+        cell.layers.map((layer, i) => <LayerView key={i} layer={layer} />)
+      )}
     </svg>
   );
 }

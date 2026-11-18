@@ -8,7 +8,7 @@ import {
   itemSignature,
   levelOfScore,
   solveAttribute,
-  type ItemSpec,
+  type AttributeItemSpec,
   type Level,
 } from '../../src/generator';
 import { mulberry32 } from '../../src/generator/rng';
@@ -17,8 +17,8 @@ const LEVELS: Level[] = [1, 2, 3, 4, 5];
 const SEED_COUNT = 10_000;
 
 /** 무작위 시드 10,000개로 만든 문항 (레벨 1~5를 고르게). 한 번만 만들어 여러 테스트에서 쓴다. */
-let cache: ItemSpec[] | null = null;
-function bulkItems(): ItemSpec[] {
+let cache: AttributeItemSpec[] | null = null;
+function bulkItems(): AttributeItemSpec[] {
   if (!cache) {
     const seeds = mulberry32(20261117);
     cache = Array.from({ length: SEED_COUNT }, (_, i) => {

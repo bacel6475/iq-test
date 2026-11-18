@@ -53,6 +53,15 @@ describe('시험지 구성', () => {
     for (const item of second) expect(used.has(itemSignature(item))).toBe(false);
   });
 
+  it('논리 계열이 전체의 약 30%이며 레벨 2·3 자리에만 들어간다', { timeout: 60_000 }, () => {
+    for (const preset of PRESETS.filter((p) => p.id !== 'custom')) {
+      const items = assembleTest({ seed: 3, count: preset.itemCount, levelRange: preset.levelRange });
+      const logic = items.filter((i) => i.family === 'logic');
+      expect(logic.length).toBe(Math.round(preset.itemCount * 0.3));
+      for (const item of logic) expect([2, 3]).toContain(item.level);
+    }
+  });
+
   it('60문항 시험지를 빠르게 만든다 (폰에서 기다리지 않도록)', () => {
     const t = performance.now();
     assembleTest({ seed: 123, count: 60, levelRange: [1, 5] });

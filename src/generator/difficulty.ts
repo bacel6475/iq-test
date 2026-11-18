@@ -1,4 +1,15 @@
-import type { Level, RuleKind } from './types';
+import type { Level, LogicOp, RuleKind } from './types';
+
+/** 논리 연산 가중치. 논리 문항의 난이도 점수 = 연산 가중치 (레이어 1개) */
+export const OP_WEIGHT: Record<LogicOp, number> = {
+  or: 2.0,
+  and: 2.0,
+  xor: 2.5,
+  diff: 2.5,
+};
+
+/** 각 연산이 들어갈 수 있는 레벨 (OR·AND → 2, XOR·DIFF → 3) */
+export const LOGIC_LEVELS: readonly Level[] = [2, 3];
 
 export const RULE_WEIGHT: Record<RuleKind, number> = {
   constant: 0,
