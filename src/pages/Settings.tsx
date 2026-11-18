@@ -10,6 +10,24 @@ function todayStamp(): string {
 
 type Message = { kind: 'ok' | 'error'; text: string } | null;
 
+interface OfflineStatus {
+  supported: boolean;
+  controlled: boolean;
+  cachedFiles: number;
+}
+
+/** 인터넷 없이 열기 위해 이 기기에 저장된 앱 파일 수 (서비스 워커의 미리 저장 캐시) */
+async function readOfflineStatus(): Promise<OfflineStatus> {
+  if (!('serviceWorker' in navigator) || typeof caches === 'undefined') {
+    return { supported: false, controlled: false, cachedFiles: 0 };
+  }
+  let cachedFiles = 0;
+  for (const name of await caches.keys()) {
+    if (name.includes('precache')) cachedFiles += (await (await caches.open(name)).keys()).length;
+  }
+  return { supported: true, controlled: !!navigator.serviceWorker.controller, cachedFiles };
+}
+
 export default function Settings() {
   const [count, setCount] = useState<number | null>(null);
   const [message, setMessage] = useState<Message>(null);
@@ -17,8 +35,15 @@ export default function Settings() {
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [offline, setOffline] = useState<OfflineStatus | null>(null);
+
   const refresh = () => void listSessions().then((s) => setCount(s.length));
   useEffect(refresh, []);
+  useEffect(() => {
+    void readOfflineStatus()
+      .then(setOffline)
+      .catch(() => setOffline({ supported: false, controlled: false, cachedFiles: 0 }));
+  }, []);
 
   const doExport = async () => {
     setBusy(true);
@@ -71,7 +96,24 @@ export default function Settings() {
       </Link>
       <h1 className="mt-2 text-2xl font-bold">설정</h1>
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm dark:bg-neutral-900">
+      <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm dark:bg-neutral-900" data-testid="offline-status">
+        <h2 className="text-base font-semibold">오프라인 사용</h2>
+        {offline === null ? (
+          <p className="mt-1 text-sm text-neutral-500">확인 중…</p>
+        ) : offline.cachedFiles > 0 ? (
+          <p className="mt-1 text-sm leading-relaxed text-emerald-700 dark:text-emerald-400">
+            ✓ 준비됨 — 앱 파일 {offline.cachedFiles}개가 이 기기에 저장되어, 인터넷 없이도(비행기 모드) 열립니다.
+          </p>
+        ) : (
+          <p className="mt-1 text-sm leading-relaxed text-amber-700 dark:text-amber-400">
+            {offline.supported
+              ? '– 아직 준비 안 됨. 인터넷에 연결된 상태로 앱을 닫았다가 다시 한 번 열어 주세요.'
+              : '– 이 브라우저는 오프라인 사용을 지원하지 않습니다.'}
+          </p>
+        )}
+      </section>
+
+      <section className="mt-4 rounded-2xl bg-white p-5 shadow-sm dark:bg-neutral-900">
         <h2 className="text-base font-semibold">기록 백업</h2>
         <p className="mt-1 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
           기록은 이 기기의 브라우저 안에만 있습니다. 크롬의 사이트 데이터를 지우거나 폰을 바꾸면 사라지므로, 가끔 백업
