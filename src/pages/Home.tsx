@@ -95,9 +95,14 @@ export default function Home() {
 
       <footer className="mt-auto pt-10 text-center text-xs leading-relaxed text-neutral-400 dark:text-neutral-600">
         <p>이 앱의 점수는 공인 IQ가 아니며 본인 기록 간 비교용입니다.</p>
-        <Link to="/dev/gallery" className="mt-3 inline-block px-3 py-3 underline underline-offset-4">
-          개발용 문항 갤러리
-        </Link>
+        <div className="mt-3 flex justify-center gap-2">
+          <Link to="/settings" className="px-3 py-3 underline underline-offset-4">
+            설정·백업
+          </Link>
+          <Link to="/dev/gallery" className="px-3 py-3 underline underline-offset-4">
+            개발용 문항 갤러리
+          </Link>
+        </div>
       </footer>
     </main>
   );

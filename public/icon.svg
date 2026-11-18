@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 앱 아이콘: 3×3 행렬, 오른쪽 아래 빈칸에 물음표 -->
+  <rect width="512" height="512" rx="96" fill="#111111"/>
+  <g transform="translate(96 96)">
+    <rect width="320" height="320" fill="#ffffff"/>
+    <g stroke="#111111" stroke-width="8">
+      <line x1="106.7" y1="0" x2="106.7" y2="320"/>
+      <line x1="213.3" y1="0" x2="213.3" y2="320"/>
+      <line x1="0" y1="106.7" x2="320" y2="106.7"/>
+      <line x1="0" y1="213.3" x2="320" y2="213.3"/>
+    </g>
+    <g fill="#111111">
+      <circle cx="53.3" cy="53.3" r="16"/>
+      <circle cx="160" cy="53.3" r="24"/>
+      <circle cx="266.7" cy="53.3" r="32"/>
+      <rect x="37.3" y="144" width="32" height="32"/>
+      <rect x="136" y="136" width="48" height="48"/>
+      <rect x="234.7" y="128" width="64" height="64"/>
+      <path d="M53.3 236 L72 270 L34.6 270 Z"/>
+      <path d="M160 228 L188 278 L132 278 Z"/>
+    </g>
+    <rect x="217.3" y="217.3" width="98.7" height="98.7" fill="#e5e5e5"/>
+    <text x="266.7" y="296" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="700" fill="#111111">?</text>
+  </g>
+</svg>

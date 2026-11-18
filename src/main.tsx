@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createHashRouter, RouterProvider } from 'react-router';
+import { registerSW } from 'virtual:pwa-register';
 import { routes } from './App';
 import './index.css';
 
@@ -15,6 +16,10 @@ media.addEventListener('change', applyTheme);
 
 // 저장 공간이 부족할 때 브라우저가 기록을 지우지 않도록 "영구 저장"을 요청한다 (거절돼도 앱은 동작).
 void navigator.storage?.persist?.().catch(() => false);
+
+// 오프라인용 서비스 워커 등록. 새 버전이 올라오면 다음에 앱을 열 때 자동으로 바뀐다.
+// (시험 중이어도 답과 남은 시간은 저장되어 있으므로 화면이 새로 고쳐져도 이어서 풀 수 있다.)
+registerSW({ immediate: true });
 
 // 해시 라우터: 주소가 /#/setup 처럼 되어 GitHub Pages 같은 정적 호스팅에서도 새로고침이 된다.
 const router = createHashRouter(routes);

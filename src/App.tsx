@@ -3,6 +3,7 @@ import DevGallery from './pages/DevGallery';
 import History from './pages/History';
 import Home from './pages/Home';
 import Result from './pages/Result';
+import Settings from './pages/Settings';
 import Setup from './pages/Setup';
 import Test from './pages/Test';
 
@@ -25,6 +26,7 @@ export const routes: RouteObject[] = [
       { path: '/test/:sessionId', element: <Test /> },
       { path: '/result/:sessionId', element: <Result /> },
       { path: '/history', element: <History /> },
+      { path: '/settings', element: <Settings /> },
       { path: '/dev/gallery', element: <DevGallery /> },
       { path: '*', element: <Home /> },
     ],

@@ -1,7 +1,15 @@
 import { itemSignature } from '../generator/signature';
 import type { ItemSpec } from '../generator/types';
 import { scoreResponses } from '../scoring';
-import { db, type ItemRow, type ResponseRow, type SessionMode, type SessionRow, type SessionStatus } from './schema';
+import {
+  db,
+  type ItemRow,
+  type ResponseRow,
+  type SessionMode,
+  type SessionRow,
+  type SessionStatus,
+  type SettingRow,
+} from './schema';
 
 // 시험 세션 저장소. 화면은 이 파일의 함수만 부르고, DB(Dexie)를 직접 만지지 않는다.
 
@@ -181,4 +189,70 @@ export async function clearAll(): Promise<void> {
   await db.transaction('rw', db.items, db.sessions, db.responses, db.settings, async () => {
     await Promise.all([db.items.clear(), db.sessions.clear(), db.responses.clear(), db.settings.clear()]);
   });
+}
+
+/* ---------------- 백업: 내보내기·가져오기 ---------------- */
+
+export const BACKUP_FORMAT = 'iq-test-backup';
+export const BACKUP_VERSION = 1;
+
+export interface BackupFile {
+  format: typeof BACKUP_FORMAT;
+  version: number;
+  exportedAt: number;
+  items: ItemRow[];
+  sessions: SessionRow[];
+  responses: ResponseRow[];
+  settings: SettingRow[];
+}
+
+/** 모든 기록을 한 파일(JSON)에 담을 수 있는 형태로 꺼낸다. */
+export async function exportAll(now = Date.now()): Promise<BackupFile> {
+  return db.transaction('r', db.items, db.sessions, db.responses, db.settings, async () => ({
+    format: BACKUP_FORMAT,
+    version: BACKUP_VERSION,
+    exportedAt: now,
+    items: await db.items.toArray(),
+    sessions: await db.sessions.toArray(),
+    responses: await db.responses.toArray(),
+    settings: await db.settings.toArray(),
+  }));
+}
+
+export interface ImportSummary {
+  sessions: number;
+  items: number;
+}
+
+/**
+ * 백업 파일을 읽어 기존 기록에 합친다. 같은 기록(같은 id)은 백업 내용으로 덮어쓴다.
+ * 형식이 맞지 않으면 아무것도 바꾸지 않고 오류를 낸다.
+ */
+export async function importAll(data: unknown): Promise<ImportSummary> {
+  const backup = data as Partial<BackupFile> | null;
+  if (!backup || backup.format !== BACKUP_FORMAT) {
+    throw new Error('이 앱에서 내보낸 백업 파일이 아닙니다.');
+  }
+  if (typeof backup.version !== 'number' || backup.version > BACKUP_VERSION) {
+    throw new Error('더 새로운 버전의 앱에서 만든 백업입니다. 앱을 업데이트한 뒤 다시 시도하세요.');
+  }
+  const { items, sessions, responses, settings = [] } = backup;
+  if (!Array.isArray(items) || !Array.isArray(sessions) || !Array.isArray(responses) || !Array.isArray(settings)) {
+    throw new Error('백업 파일의 내용이 손상되었습니다.');
+  }
+  const itemIds = new Set(items.map((i) => i.id));
+  const broken = sessions.some(
+    (s) => typeof s?.id !== 'string' || !Array.isArray(s.itemIds) || s.itemIds.some((id) => !itemIds.has(id)),
+  );
+  if (broken || items.some((i) => typeof i?.signature !== 'string' || !i.spec)) {
+    throw new Error('백업 파일의 내용이 손상되었습니다.');
+  }
+
+  await db.transaction('rw', db.items, db.sessions, db.responses, db.settings, async () => {
+    await db.items.bulkPut(items);
+    await db.sessions.bulkPut(sessions);
+    await db.responses.bulkPut(responses);
+    await db.settings.bulkPut(settings);
+  });
+  return { sessions: sessions.length, items: items.length };
 }
