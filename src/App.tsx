@@ -1,5 +1,6 @@
 import { Outlet, type RouteObject } from 'react-router';
 import DevGallery from './pages/DevGallery';
+import History from './pages/History';
 import Home from './pages/Home';
 import Result from './pages/Result';
 import Setup from './pages/Setup';
@@ -23,6 +24,7 @@ export const routes: RouteObject[] = [
       { path: '/setup', element: <Setup /> },
       { path: '/test/:sessionId', element: <Test /> },
       { path: '/result/:sessionId', element: <Result /> },
+      { path: '/history', element: <History /> },
       { path: '/dev/gallery', element: <DevGallery /> },
       { path: '*', element: <Home /> },
     ],

@@ -3,6 +3,22 @@
 /* 다크 모드는 기기 설정을 따르되, 나중에 설정 화면에서 html에 .dark / .light 를 붙여 강제할 수 있게 한다. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* 그래프 색. 계열 1색(파랑)과 상태색(정답·오답)은 기기 테마에 맞게 고른 단계를 쓴다. */
+:root {
+  --chart-series: #2a78d6;
+  --chart-good: #0ca30c;
+  --chart-critical: #d03b3b;
+  --chart-muted: #b9b9b4;
+  --chart-grid: #e4e4e0;
+  --chart-surface: #ffffff;
+}
+.dark {
+  --chart-series: #3987e5;
+  --chart-muted: #5c5c58;
+  --chart-grid: #333331;
+  --chart-surface: #171717;
+}
+
 html,
 body,
 #root {

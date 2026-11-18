@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { createSession, finishSession, getActiveSession, type SessionMode, type TestSession } from '../db/repo';
+import {
+  createSession,
+  expireOverdueSessions,
+  finishSession,
+  getActiveSession,
+  getUsedSignatures,
+  type SessionMode,
+  type SessionRow,
+} from '../db/repo';
 import { assembleTest } from '../generator/assemble';
 import { CUSTOM_LIMITS, PRESETS, type Preset, type PresetId } from '../presets';
 
@@ -64,13 +72,15 @@ export default function Setup() {
   const [mode, setMode] = useState<SessionMode>('timed');
   const [customCount, setCustomCount] = useState(20);
   const [customMinutes, setCustomMinutes] = useState(15);
-  const [active, setActive] = useState<TestSession | undefined>();
+  const [active, setActive] = useState<SessionRow | undefined>();
   const [confirmAbandon, setConfirmAbandon] = useState(false);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void getActiveSession().then(setActive);
+    void expireOverdueSessions()
+      .then(getActiveSession)
+      .then(setActive);
   }, []);
 
   const preset = PRESETS.find((p) => p.id === presetId) as Preset;
@@ -83,7 +93,14 @@ export default function Setup() {
     // 버튼이 "준비 중"으로 바뀌는 것을 먼저 보여 준 뒤 문항을 만든다.
     await new Promise((resolve) => setTimeout(resolve, 0));
     try {
-      const items = assembleTest({ seed: freshSeed(), count: itemCount, levelRange: preset.levelRange });
+      // 예전에 한 번이라도 출제된 문항은 다시 내지 않는다.
+      const used = await getUsedSignatures();
+      const items = assembleTest({
+        seed: freshSeed(),
+        count: itemCount,
+        levelRange: preset.levelRange,
+        isUsed: (signature) => used.has(signature),
+      });
       const session = await createSession({ presetId, mode, items, minutes });
       navigate(`/test/${session.id}`);
     } catch (e) {

@@ -1,21 +1,26 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { getActiveSession, listSessions, type TestSession } from '../db/repo';
+import { expireOverdueSessions, getActiveSession, listSessions, type SessionRow } from '../db/repo';
 import { getPreset } from '../presets';
 import { formatClock } from '../scoring';
-
-function formatDate(ms: number): string {
-  const d = new Date(ms);
-  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
+import { formatDate } from '../stats';
 
 export default function Home() {
-  const [active, setActive] = useState<TestSession | undefined>();
-  const [recent, setRecent] = useState<TestSession[]>([]);
+  const [active, setActive] = useState<SessionRow | undefined>();
+  const [recent, setRecent] = useState<SessionRow[]>([]);
 
   useEffect(() => {
-    void getActiveSession().then(setActive);
-    void listSessions().then((all) => setRecent(all.filter((s) => s.status !== 'active').slice(0, 3)));
+    let alive = true;
+    // 앱을 열 때: 시간이 지난 진행 중 시험은 저장된 답으로 채점해 'expired'로 기록한다.
+    void expireOverdueSessions().then(async () => {
+      const [a, all] = await Promise.all([getActiveSession(), listSessions()]);
+      if (!alive) return;
+      setActive(a);
+      setRecent(all.filter((s) => s.status !== 'active').slice(0, 3));
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return (
@@ -53,7 +58,12 @@ export default function Home() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-sm font-semibold text-neutral-500">최근 기록</h2>
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold text-neutral-500">최근 기록</h2>
+          <Link to="/history" className="px-2 py-2 text-sm text-neutral-500 underline underline-offset-4">
+            전체 기록
+          </Link>
+        </div>
         {recent.length === 0 ? (
           <p className="mt-3 rounded-xl border border-dashed border-neutral-300 px-4 py-8 text-center text-sm text-neutral-500 dark:border-neutral-700">
             아직 본 시험이 없습니다.
@@ -74,7 +84,7 @@ export default function Home() {
                     <span className="block text-sm text-neutral-500">{formatDate(s.startedAt)}</span>
                   </span>
                   <span className="text-lg font-semibold tabular-nums">
-                    {s.rawScore} / {s.items.length}
+                    {s.rawScore} / {s.itemIds.length}
                   </span>
                 </Link>
               </li>

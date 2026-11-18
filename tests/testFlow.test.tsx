@@ -87,20 +87,25 @@ describe('시작 → 응답 → 제출 → 결과', () => {
   });
 });
 
+/**
+ * 시계(Date)와 반복 타이머(setInterval)만 가짜로 바꾼다.
+ * DB(가짜 IndexedDB)는 내부적으로 setTimeout을 쓰므로 그것까지 멈추면 저장이 끝나지 않는다.
+ */
+function useFakeClock(start: number) {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
+  vi.setSystemTime(start);
+}
+
 describe('타이머', () => {
   it('남은 시간을 보여 주고, 0이 되면 자동 제출 후 결과 화면으로 간다', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: false, toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'Date'] });
     const start = new Date('2026-11-17T10:00:00').getTime();
-    vi.setSystemTime(start);
+    useFakeClock(start);
 
     const items = assembleTest({ seed: 2, count: 10, levelRange: [1, 5] });
     const session = await createSession({ presetId: 'custom', mode: 'timed', items, minutes: 6, now: start });
     const { router } = renderApp(`/test/${session.id}`);
 
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(0);
-    });
-    expect(screen.getByRole('timer')).toHaveTextContent('06:00');
+    expect(await screen.findByRole('timer')).toHaveTextContent('06:00');
     expect(screen.getByRole('timer').className).not.toMatch(/orange|red/);
 
     // 5분 이하: 주황색
@@ -121,9 +126,7 @@ describe('타이머', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(60_000);
     });
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(0);
-    });
+    expect(await screen.findByTestId('raw-score')).toBeInTheDocument();
     expect(router.state.location.pathname).toBe(`/result/${session.id}`);
     const saved = await getSession(session.id);
     expect(saved!.status).toBe('expired');
@@ -131,15 +134,12 @@ describe('타이머', () => {
   });
 
   it('화면이 꺼졌다 켜진 경우처럼 타이머가 멈췄다 와도 실제 시각 기준으로 계산한다', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'Date'] });
     const start = new Date('2026-11-17T10:00:00').getTime();
-    vi.setSystemTime(start);
+    useFakeClock(start);
     const items = assembleTest({ seed: 3, count: 10, levelRange: [1, 5] });
     const session = await createSession({ presetId: 'custom', mode: 'timed', items, minutes: 10, now: start });
     renderApp(`/test/${session.id}`);
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(0);
-    });
+    expect(await screen.findByRole('timer')).toHaveTextContent('10:00');
 
     // 타이머 콜백 없이 시계만 3분 17초 흐름 (화면이 꺼져 브라우저가 타이머를 멈춘 상황)
     vi.setSystemTime(start + 197_000);

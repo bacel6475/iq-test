@@ -13,6 +13,9 @@ const applyTheme = () => document.documentElement.classList.toggle('dark', media
 applyTheme();
 media.addEventListener('change', applyTheme);
 
+// 저장 공간이 부족할 때 브라우저가 기록을 지우지 않도록 "영구 저장"을 요청한다 (거절돼도 앱은 동작).
+void navigator.storage?.persist?.().catch(() => false);
+
 // 해시 라우터: 주소가 /#/setup 처럼 되어 GitHub Pages 같은 정적 호스팅에서도 새로고침이 된다.
 const router = createHashRouter(routes);
 

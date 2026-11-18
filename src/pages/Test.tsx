@@ -5,6 +5,7 @@ import {
   addTimeSpent,
   finishSession,
   getSession,
+  setCurrentIndex,
   updateResponse,
   type ResponseState,
   type SessionStatus,
@@ -53,8 +54,13 @@ export default function Test() {
     let alive = true;
     void getSession(sessionId).then((s) => {
       if (!alive) return;
-      if (s && s.status !== 'active') navigate(`/result/${s.id}`, { replace: true });
-      else setSession(s ?? null);
+      if (s && s.status !== 'active') {
+        navigate(`/result/${s.id}`, { replace: true });
+        return;
+      }
+      // 새로고침했으면 마지막으로 보던 문항에서 이어 간다.
+      if (s) setIndex(Math.min(s.currentIndex ?? 0, s.items.length - 1));
+      setSession(s ?? null);
     });
     return () => {
       alive = false;
@@ -84,6 +90,7 @@ export default function Test() {
       if (document.visibilityState === 'visible') enteredAt = Date.now();
     };
 
+    void setCurrentIndex(sessionId, itemIndex);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
@@ -126,6 +133,16 @@ export default function Test() {
   );
 
   const dialogOpen = listOpen || confirmSubmit || blocker.state === 'blocked';
+
+  // 문항 목록 패널은 Esc 키로도 닫는다.
+  useEffect(() => {
+    if (!listOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setListOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [listOpen]);
 
   // PC 키보드: ←/→ 이동, 1~8 보기 선택, F 다시 보기
   useEffect(() => {
